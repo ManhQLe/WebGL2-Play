@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" type="text/javascript"></script>
+
+    <script src="JS/Ctrl8.js" type="text/javascript"></script>
+    <script src="JS/Cir8.js" type="text/javascript"></script>
+    <script src="JS/GL.js" type="text/javascript"></script>
+    <link href="CSS/css.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <canvas id="CANVAS" class="MYCANVAS">
+    </canvas>
+    <script>
+      
+    
+        var ShaderSources = {};
+        var W = 800,
+            H = 800;
+        var Game = new WebGL("#CANVAS",W,H);
+       
+        var VBO;
+        var VAO;
+        var program;
+        Game.Init = function () {
+
+            var gl = this.GL;
+            
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.depthFunc(gl.LEQUAL);
+            gl.clearDepth(1.0);
+            gl.enable(gl.DEPTH_TEST);
+            gl.view
+            var V = [
+                0.0, 1.0, 0.0, 
+                -1, -1, 0.0,
+                1, -0, 0.0
+            ];
+            VBO = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER,VBO);
+            gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(V), gl.DYNAMIC_DRAW);
+           
+
+            var VShader = LoadShader(gl,"VSource","VS");
+            var PShader = LoadShader(gl,"PSource","PS");
+            program = gl.createProgram();
+            gl.attachShader(program,VShader);
+            gl.attachShader(program,PShader);
+            gl.linkProgram(program);
+
+            var Attribposition = gl.getAttribLocation(program,"pos");
+            VAO = gl.createVertexArray();
+            gl.bindVertexArray(VAO);
+            gl.enableVertexAttribArray(Attribposition);
+            gl.vertexAttribPointer(Attribposition,3,gl.FLOAT,false,0,0);
+
+
+        }
+        Game.Render = function () {
+            var gl = this.GL;
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.bindBuffer(gl.ARRAY_BUFFER, VBO);
+            gl.bindVertexArray(VAO);
+            gl.useProgram(program);
+            gl.drawArrays(gl.TRIANGLES,0,3);
+        }
+
+        function LoadShader(gl,name,type){            
+            var shader;
+            if(type == "PS")
+                shader = gl.createShader(gl.FRAGMENT_SHADER);
+            else
+                shader = gl.createShader(gl.VERTEX_SHADER);
+
+            gl.shaderSource(shader,ShaderSources[name]);
+            gl.compileShader(shader);
+            if(!gl.getShaderParameter(shader,gl.COMPILE_STATUS)){
+                console.log(type);
+                console.log(gl.getShaderInfoLog(shader));
+            }
+            return shader;
+        }
+
+        function LoadFile() {
+            var Ports = this.Ports;
+            var FileName = this.Props.FileName
+            $.ajax({
+                url: "Shaders/" + FileName,
+                dataType : "text",
+                success: function (data) {
+                    Ports.FILE = data;
+                    
+                }
+            })
+        }      
+
+
+        var VSourceLoader = new CPack({
+            "FX":LoadFile,
+            "Props":{
+                "FileName":"VertexShader.hlsl"
+            }
+        });
+
+        var PSourceLoader = new CPack({
+            "FX":LoadFile,
+            "Props":{
+                "FileName":"PixelShader.hlsl"
+            }
+        });
+
+        var PackSource = new CPack({
+            "FX":function(){
+                var Ports = this.Ports;
+                ShaderSources["VSource"] = Ports.VSOURCE;
+                ShaderSources["PSource"] = Ports.PSOURCE;
+                Ports.DONE = 1;
+            },
+            "Ins":["VSOURCE","PSOURCE"]
+        });
+
+        var StartGame = new CPack({
+            "FX":function(){
+               Game.Start();
+            }
+        })
+        
+
+        var StartWire = Cir8.MultiLink(VSourceLoader,"X",PSourceLoader,"X");
+        Cir8.Link(PackSource,"VSOURCE","FILE",VSourceLoader);
+        Cir8.Link(PackSource,"PSOURCE","FILE",PSourceLoader);
+        Cir8.Link(PackSource,"DONE","X",StartGame);
+        StartWire.Signal = 1;
+
+    </script>
+
+</body>
+
+</html>

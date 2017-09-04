@@ -1,0 +1,16 @@
+{
+  "name": "webglexp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Manh le",
+  "license": "ISC",
+  "dependencies": {
+    "async8": "^0.1.13",
+    "cir8": "0.0.25",
+    "express": "^4.15.4"
+  }
+}
