@@ -5,7 +5,7 @@ var MatWorld = mat4.create();
 var MatCamera = mat4.create();
 var MatProj = mat4.create();
 
-mat4.lookAt(MatCamera,[0,-8,10],[0,0,0],[0,0,1]);
+mat4.lookAt(MatCamera,[0,10,10],[0,0,0],[0,0,1]);
 mat4.perspective(MatProj,glMatrix.toRadian(60),1,0.1,1000)
 
 var VBO;
