@@ -6,6 +6,6 @@ app.use(express.static(path.join(__dirname,'statics')));
 
 
 app.listen(port,function(){
-    console.log("appstarted")
+    console.log("App started");
 });
 

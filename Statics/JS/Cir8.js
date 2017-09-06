@@ -126,7 +126,13 @@ CConduit.prototype.Connect = function (A, Contact) {
 CConduit.prototype.OnVibration = function (FromComp,Contact,Val) {
     var me = this;
     this._.Contacts.forEach(function (Pair) {
-        if (Pair.Comp !== FromComp && Pair.Contact !== Contact) //Prevent bouncing OnVibration
+
+        if (Pair.Comp == FromComp && Pair.Contact == Contact) 
+        {
+            //Do nothing    
+             //Prevent bouncing OnVibration
+        }
+        else           
             me.ParallelTrx ? setTimeout(CConduit.PVibrate, 0, Pair.Comp, me, Pair.Contact, Val)
             : Pair.Comp.OnVibration(me, Pair.Contact, Val);
     });
@@ -160,6 +166,7 @@ CPort.Get = function (name, Storage) {
 }
 
 CPort.Set = function (val, name, Storage) {
+
     var Pair = this._.Contacts[name]
     if (Pair) {
         //We use Vibrate as instead of Signal becoz not every
@@ -212,6 +219,7 @@ CPack.prototype.Connect = function (A, Contact) {
 }
 
 CPack.prototype.OnVibration = function (FromComp, Contact, Val) {
+
     if (!this.Ins.length)
         this.FX();
 

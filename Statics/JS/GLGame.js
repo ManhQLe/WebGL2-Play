@@ -86,16 +86,25 @@ GLGame.CreateProgram = function (gl, vshader, pshader,Locs) {
     gl.deleteProgram(program);
 }
 
-GLGame.CreateVBO = function (gl, Data, IsDynamic) {
+GLGame.CreateVBO = function (gl, Data, IsDynamic, BufferType) {
+    BufferType =  BufferType?BufferType:gl.ARRAY_BUFFER;
     var buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(Data), IsDynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+    gl.bindBuffer(BufferType, buffer);
+    gl.bufferData(BufferType, BufferType == gl.ARRAY_BUFFER?  new Float32Array(Data): new Uint32Array(Data), IsDynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
     return buffer;
 }
 GLGame.CreateVAO = function(gl){
     var VAO = gl.createVertexArray();
     gl.bindVertexArray(VAO);
     return VAO;
+}
+
+GLGame.LoadImage = function(Done,imagepath){
+    var img = new Image();    
+    img.onload = function(){
+        Done(this);
+    }
+    img.src = imagepath;
 }
 
 GLGame.GetShaderSources = function(Done,Sources){
@@ -124,7 +133,7 @@ EventCtrl.ExtendsTo(GLProgram);
 
 GLProgram.prototype.Compile = function (Done){    
     var me = this;
-    console.log(me.Locs)
+   
     GLGame.GetShaderSources(function(S){
         var VShader = GLGame.CreateShader(me.gl,S[0],"VS");
         var PShader = GLGame.CreateShader(me.gl,S[1],"PS");
@@ -133,4 +142,44 @@ GLProgram.prototype.Compile = function (Done){
     },[this.VSource,this.PSource]);
 
 }
+
+function GLProgramPack(init){
+    init.FX = function(){
+        var me = this;
+        GLGame.GetShaderSources(function(S){
+            var VShader = GLGame.CreateShader(me.gl,S[0],"VS");
+            var PShader = GLGame.CreateShader(me.gl,S[1],"PS");
+            var Program = GLGame.CreateProgram(me.gl,VShader,PShader,me.Locs);
+            me.Ports.PROGRAM = Program;
+        },[this.VSource,this.PSource]);
+    }        
+    GLProgramPack.baseConstructor.call(this,init);
+    this.Prop("gl");
+    this.Prop("VSource");
+    this.Prop("PSource");
+    this.Prop("Locs",[]);
+}
+CPack.ExtendsTo(GLProgramPack);
+
+function LoadImagePack(init){
+    init.FX = function(){
+        var me = this;        
+        Async8.DPQueue(this.ImagePaths,function(Cfx,ps,i){
+            var Path = ps[i];
+            var img = new Image();            
+            img.addEventListener("load",function(){
+                Cfx(this);
+
+            })
+            img.src = Path;
+
+        },function(images){            
+            me.Ports.IMAGES = images;
+        })    
+    }
+    LoadImagePack.baseConstructor.call(this,init);
+    this.Prop("ImagePaths",[]);
+}
+
+CPack.ExtendsTo(LoadImagePack);
 
