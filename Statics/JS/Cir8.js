@@ -1,6 +1,6 @@
 ﻿var Cir8 = {
     Count: 0,
-    Pack:function(init){
+    Pack: function (init) {
         return new CPack(init);
     },
     Wire: function (name) {
@@ -17,7 +17,9 @@
         B.DisconnectWith(A, Contact);
     },
     Link: function (A, Contact1, Contact2, B) {
-        var Conduit = new CConduit();
+        var Conduit = new CConduit({
+            "Name": ("Wire" + Cir8.Count++)
+        });
         this.Connect(A, Conduit, Contact1);
         this.Connect(B, Conduit, Contact2);
         return Conduit;
@@ -30,32 +32,28 @@
         }
         var Conn = new CConduit();
 
-        for (var i = 0; i < X; i+=2) {
+        for (var i = 0; i < X; i += 2) {
             Conn.Connect(A[i], A[i + 1]);
         }
         return Conn;
     },
-    Board: function () {        
-    }
+    Board: function () {}
 }
 
 function CComp(Init) {
     CComp.baseConstructor.call(this, Init);
-    this.Prop("Name", (Date.now() + (CComp.CCount++)));
+    this.Prop("Name", (Date.now() + (++CComp.Count)));
 }
 
 CComp.Count = 0;
 
 Ctrl8.ExtendsTo(CComp);
 
-CComp.prototype.Connect = function (A, Contact) {
-}
+CComp.prototype.Connect = function (A, Contact) {}
 
-CComp.prototype.OnVibration = function (FromComp,Contact,Val) {
-}
+CComp.prototype.OnVibration = function (FromComp, Contact, Val) {}
 
-CComp.prototype.DisconnectWith = function (A, Contact) {    
-}
+CComp.prototype.DisconnectWith = function (A, Contact) {}
 
 //--------------------------------------
 function C1Way(Init) {
@@ -70,8 +68,7 @@ C1Way.prototype.Connect = function (A, Contact) {
     var C = this._.Contacts[Contact];
     if (C) {
         C === A ? 1 : C.Comp.Contact(A, Contact);
-    }
-    else {
+    } else {
         this._.Contacts[Contact] = A;
     }
 }
@@ -94,47 +91,54 @@ C1Way.prototype.DisconnectWith = function (A, Contact) {
 }
 
 //--------------------------------------
-function CConduit(Init){
-    CConduit.baseConstructor.call(this,Init);
+function CConduit(Init) {
+    CConduit.baseConstructor.call(this, Init);
     this._.Contacts = [];
-    
+
     this.Prop("ParallelTrx", true);
 
     this.CalcProp("Signal", function (name, storage) {
         return null
     }, function (nval, name, storage) {
         this.OnVibration(null, null, nval);
-    })    
+    })
 }
 
 CComp.ExtendsTo(CConduit);
 
 CConduit.prototype.Connect = function (A, Contact) {
     this._.Contacts.every(function (Pair) {
-        return Pair.Comp !== A || Pair.Contact !== Contact
-    }) ?
-    (
-        this._.Contacts.push({
-            "Contact": Contact,
-            "Comp": A
-        }),
-        A.Connect(this,Contact)
-    )
-    : 0;
+            return Pair.Comp !== A || Pair.Contact !== Contact
+        }) ?
+        (
+            this._.Contacts.push({
+                "Contact": Contact,
+                "Comp": A
+            }),
+            A.Connect(this, Contact)
+        ) :
+        0;
 }
-
-CConduit.prototype.OnVibration = function (FromComp,Contact,Val) {
+var BX = 0;
+CConduit.prototype.OnVibration = function (FromComp, Contact, Val) {
     var me = this;
-    this._.Contacts.forEach(function (Pair) {
+    this._.Contacts.forEach(function (Pair) {        
 
-        if (Pair.Comp == FromComp && Pair.Contact == Contact) 
-        {
+        if (Pair.Comp == FromComp && Pair.Contact == Contact) {
             //Do nothing    
-             //Prevent bouncing OnVibration
+            //Prevent bouncing OnVibration
+        } else {
+            console.log("From " + (FromComp ? FromComp.Name : "NULL") + " - " + Contact + " - To " + Pair.Comp.Name);
+            console.log(FromComp)
+            console.log("--------------")
+            if(FromComp && Pair.Comp.Name == "YPACK")
+                BX++;
+            if(BX>1)
+                throw "Err";
+         
+            me.ParallelTrx ? setTimeout(CConduit.PVibrate, 0, Pair.Comp, me, Pair.Contact, Val) :
+                Pair.Comp.OnVibration(me, Pair.Contact, Val);
         }
-        else           
-            me.ParallelTrx ? setTimeout(CConduit.PVibrate, 0, Pair.Comp, me, Pair.Contact, Val)
-            : Pair.Comp.OnVibration(me, Pair.Contact, Val);
     });
 }
 
@@ -147,14 +151,14 @@ CConduit.prototype.DisconnectWith = function (A, Contact) {
     }) ? 1 : (this._.Contacts.splice(idx, 1), A.DisconnectWith(this, Contact));
 }
 
-CConduit.PVibrate = function (chip,conduit,Contact,Val) {
+CConduit.PVibrate = function (chip, conduit, Contact, Val) {
     chip.OnVibration(conduit, Contact, Val);
 }
 
 //-----------------------------------------
 
 function CPort(Init) {
-    CPort.baseConstructor.call(this, Init);
+    CPort.baseConstructor.call(this, Init);    
     this._.Contacts = {};
 }
 
@@ -170,27 +174,27 @@ CPort.Set = function (val, name, Storage) {
     var Pair = this._.Contacts[name]
     if (Pair) {
         //We use Vibrate as instead of Signal becoz not every
-        Pair.c.OnVibration(this,name,val); 
+        Pair.c.OnVibration(this._.Host, name, val);
     }
 }
 //--------------------------------------
 
-function CPack(Init) {    
-    CPack.baseConstructor.call(this, Init);    
+function CPack(Init) {
+    CPack.baseConstructor.call(this, Init);
     this._.Collected = 0;
     this._.HasInputs = {};
-    
-    this.Prop("Ins", []);
-    this.Prop("Props",{});
-    this.Prop("FX", function () { });
-    this.DrillProp("Ports", this._.Props["Ports"], CPort);
 
+    this.Prop("Ins", []);
+    this.Prop("Props", {});
+    this.Prop("FX", function () {});
+    this.DrillProp("Ports", this._.Props["Ports"], CPort);
+    this.Ports._.Host = this;
     this.Prop("Staged", false, 0, function (nval) {
         this._.Collected = 0;
         this._.HasInputs = {};
     });
 
-    this.Prop("InitFX", function () { });
+    this.Prop("InitFX", function () {});
     this.InitFX.call(this);
 }
 CComp.ExtendsTo(CPack);
@@ -198,7 +202,7 @@ CComp.ExtendsTo(CPack);
 CPack.prototype.Connect = function (A, Contact) {
 
     var Ports = this.Ports;
-    
+
     //We need to handle connections with existing contact
     //We will connect the contact component with the new Component;
 
@@ -209,22 +213,24 @@ CPack.prototype.Connect = function (A, Contact) {
         else {
             C.c.Connect(A, Contact);
         }
-    }   
-    else {
-        Ports._.Contacts[Contact] = { "c": A };
+    } else {
+        Ports._.Contacts[Contact] = {
+            "c": A
+        };
         if (!Ports.hasOwnProperty(Contact)) //Do not yet have port contact
             Ports.CalcProp(Contact, CPort.Get, CPort.Set, 1, undefined, 1);
         A.Connect(this, Contact);
     }
 }
 
-CPack.prototype.OnVibration = function (FromComp, Contact, Val) {
-
+CPack.prototype.OnVibration = function (FromComp, Contact, Val) {    
     if (!this.Ins.length)
         this.FX();
 
     var idx = this.Ins.indexOf(Contact);
     if (idx >= 0) {
+
+
         var K = this._.HasInputs[Contact];
         this._.HasInputs[Contact] = 1;
         this.Ports._.Contacts[Contact].v = Val;
@@ -238,8 +244,7 @@ CPack.prototype.OnVibration = function (FromComp, Contact, Val) {
                 this._.Collected = 0,
                     this._.HasInputs = {}
             }
-        }
-        else
+        } else
             K && this._.Collected >= this.Ins.length ? this.FX(Contact) : 1;
     }
 }
@@ -261,7 +266,7 @@ function CCharger(init) {
     this._.COUNT = 0;
     this.Prop("Collection", []);
     this.Prop("MAX", 1);
-    this.Prop("DischargeFX", function () { });
+    this.Prop("DischargeFX", function () {});
 }
 
 CComp.ExtendsTo(CCharger);
@@ -271,8 +276,7 @@ CCharger.prototype.Connect = function (A, Contact) {
     var C = this._.Contacts[Contact];
     if (C) {
         C === A ? 1 : C.Comp.Contact(A, Contact);
-    }
-    else {
+    } else {
         this._.Contacts[Contact] = A;
     }
 }

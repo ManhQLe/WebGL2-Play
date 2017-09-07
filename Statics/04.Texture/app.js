@@ -133,7 +133,7 @@ function LoadData(Signal) {
     
 
             var TexBuffer = gl.createTexture();
-            gl.bindBuffer(gl.TEXTURE_2D,TexBuffer);
+            gl.bindTexture(gl.TEXTURE_2D,TexBuffer);
             gl.activeTexture(gl.TEXTURE0);
             gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);
@@ -151,12 +151,9 @@ function LoadData(Signal) {
     })
 
     var W = Cir8.MultiLink(P1,"X",P2,"X");
-    var W1 =  Cir8.Link(P1,"PROGRAM","PROGRAM",P3);
-
-    console.log(W1._.Contacts)
+    var W1 =  Cir8.Link(P1,"PROGRAM","PROGRAM",P3);    
     var W2 = Cir8.Link(P2,"IMAGES","IMAGES",P3);
-    console.log(W2._.Contacts)
-    W.Signal = "Start";
+    //W.Signal = "Start";
 }
 
 function Render() {

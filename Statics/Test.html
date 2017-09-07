@@ -1,0 +1,29 @@
+<script src="JS/Ctrl8.js">
+</script>
+<script src="JS/Cir8.js">
+</script>
+<script>
+    var X = new CPack({
+        "FX":function(){
+            console.log("OK");
+            this.Ports.DONE =1;
+        },
+        "Name":"XPACK"
+    });
+
+    var Y = new CPack({
+        "FX":function(){
+            console.log("Y");
+            //this.Ports.DONE = 2;
+        },
+        "Name":"YPACK"
+
+    })
+
+    var W = Cir8.Wire("One");
+    W.Connect(X,"X");
+    var W2 = Cir8.Link(X,"DONE","X",Y);
+
+    W.Signal = 1;
+
+</script>
