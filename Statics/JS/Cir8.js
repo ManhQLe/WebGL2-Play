@@ -128,9 +128,6 @@ CConduit.prototype.OnVibration = function (FromComp, Contact, Val) {
             //Do nothing    
             //Prevent bouncing OnVibration
         } else {
-            console.log("From " + (FromComp ? FromComp.Name : "NULL") + " - " + Contact + " - To " + Pair.Comp.Name);
-            console.log(FromComp)
-            console.log("--------------")
             if(FromComp && Pair.Comp.Name == "YPACK")
                 BX++;
             if(BX>1)

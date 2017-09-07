@@ -168,8 +168,7 @@ function LoadImagePack(init){
             var Path = ps[i];
             var img = new Image();            
             img.addEventListener("load",function(){
-                Cfx(this);
-
+                createImageBitmap(this).then(Cfx);
             })
             img.src = Path;
 
