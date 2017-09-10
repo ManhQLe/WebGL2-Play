@@ -1,10 +1,14 @@
 /// <reference path="../JS/GLGame.js" />
 /// <reference path="../JS/gl-matrix-min.js" />
+/// <reference path="Camera.js" />
 var GPUProgram,BoxDataBuffer,BoxIndexBuffer,TexBuffer;
 var MatWorld = mat4.create();
 var MatCamera = mat4.create();
 var MatProj = mat4.create();
+var MatCameraPos
+var Cam;
 
+var Keys = {};
 var BoxData = [
     -1.0, 1.0, -1.0,   0.5, 0.5, 0.5,       0,0,
     -1.0, 1.0, 1.0,    0.5, 0.5, 0.5,       0,1,
@@ -62,18 +66,69 @@ var BoxIndicies = [
     22,20,23
 ]
 
-mat4.lookAt(MatCamera,[5,10,5],[0,0,0],[0,0,1]);
-mat4.perspective(MatProj,glMatrix.toRadian(45),1,0.1,1000)
-
 var VBO;
 
 function Init(Signal) {
     var gl = this.gl;
     gl.clearColor(0.1, 0.1, 0.1, 1.0);
     gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
+    //gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK);
-    gl.frontFace(gl.CCW);
+    gl.frontFace(gl.CCW);    
+
+    mat4.perspective(MatProj,glMatrix.toRadian(45),1,0.1,1000)
+    Cam = new Camera({
+        Pos:[0,0,20],
+        Pitch:0,
+        Yaw:0
+    });
+    Cam.GetMatrix(MatCamera)
+    
+    var m1;
+    
+    d3.select("#CANVAS").on("mousemove",function(){
+        var e = d3.event;
+               
+        if (e.buttons == 1) {
+            var m2 =d3.mouse(this);
+            Cam.SetYaw((m2[0]-m1[0])*.5);
+            Cam.SetPitch((m2[1]-m1[1])*.5);
+            m1 = m2;
+        }
+        else
+            m1 = d3.mouse(this);
+    })
+    .on("wheel",function(){
+        var e = d3.event;
+        var amount = e.wheelDelta/Math.abs(e.wheelDelta);
+        Cam.ForthBack(-amount);
+    })
+    .on("keydown",function(){
+        var e = d3.event;
+        
+       
+        switch(e.which){
+            case 65:                                
+            case 68:                                
+            case 87:                                
+            case 83:                
+                Keys[e.which] = 1;
+        }
+    })
+    .on("keyup",function(){
+        var e = d3.event;
+        
+       
+        switch(e.which){
+            case 65:                                
+            case 68:                                
+            case 87:                                
+            case 83:                
+                Keys[e.which] = 0;
+        }
+    })
+    
+
     Signal.DONE = 1;
 }
 
@@ -121,14 +176,14 @@ function LoadData(Signal) {
         "FX":function(){
             var Ports = this.Ports;
             var image = Ports.IMAGES[0];
-            console.log(image.width,image.height)
+            
             GPUProgram = Ports.PROGRAM;
             var MatWorldPos =  gl.getUniformLocation(GPUProgram,'MatWorld');
-            var MatCameraPos =  gl.getUniformLocation(GPUProgram,'MatCamera');
+            MatCameraPos =  gl.getUniformLocation(GPUProgram,'MatCamera');
             var MatProjPos = gl.getUniformLocation(GPUProgram,'MatProj');
     
             gl.uniformMatrix4fv(MatWorldPos,gl.FALSE,MatWorld);
-            gl.uniformMatrix4fv(MatCameraPos,gl.FALSE,MatCamera);
+           
             gl.uniformMatrix4fv(MatProjPos,gl.FALSE,MatProj);
     
 
@@ -155,6 +210,25 @@ function Render() {
     var gl = this.gl;
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(GPUProgram);
+
+    if(Keys[65]){
+        Cam.LeftRight(-0.1);
+    }
+
+    if(Keys[68]){
+        Cam.LeftRight(0.1);
+    }
+
+    if(Keys[87]){
+        Cam.ForthBack(-0.1);
+    }
+
+    if(Keys[83]){
+        Cam.ForthBack(0.1);
+    }
+
+    Cam.GetMatrix(MatCamera)
+    gl.uniformMatrix4fv(MatCameraPos,gl.FALSE,MatCamera);
     gl.bindTexture(gl.TEXTURE_2D,TexBuffer); 
     gl.activeTexture(gl.TEXTURE0);
     gl.drawElements(gl.TRIANGLES, BoxIndicies.length, gl.UNSIGNED_INT,0);
