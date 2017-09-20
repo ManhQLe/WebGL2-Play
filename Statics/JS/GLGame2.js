@@ -1,0 +1,213 @@
+/// <reference path="Ctrl8.js" />
+/// <reference path="Cir8.js" />
+
+function GLGame2(init) {
+    GLGame2.baseConstructor.call(this, init);
+    this.Prop("Width", 800);
+    this.Prop("Height", 800);
+    this.Prop("Canvas");
+    this.Prop("Init", function () {});
+    this.Prop("LoadData", function () {});
+    this.Prop("Render", function () {});
+
+
+    this.Canvas = typeof (this.Canvas) == 'string' ? document.querySelector(this.Canvas) : this.Canvas;
+    this.Canvas.width = this.Width
+    this.Canvas.height = this.Height;
+    this.gl = this.Canvas.getContext('webgl2');
+    this.gl.viewport(0, 0, this.Width, this.Height);
+    var me = this;
+
+    function Loop() {
+        me.Render();
+        requestAnimationFrame(Loop);
+    }
+
+    var InitChip = new CPack({
+        "FX": function () {
+            me.Init(this.Ports);
+        }
+    })
+
+    var LoadDataChip = new CPack({
+        "FX": function () {
+            me.LoadData(this.Ports);
+        }
+    })
+
+    var RenderChip = new CPack({
+        "FX": function () {
+            Loop();
+        }
+    });
+
+    this._.Wire = Cir8.Wire("W");
+    this._.Wire.Connect(InitChip, "X");
+    Cir8.Link(InitChip, "DONE", "A", LoadDataChip);
+    Cir8.Link(LoadDataChip, "DONE", "B", RenderChip);
+
+}
+
+EventCtrl.ExtendsTo(GLGame2);
+
+GLGame2.prototype.Start = function () {
+    this._.Wire.Signal = 1;
+}
+
+GLGame2.CreateShader = function (gl, source, type) {
+    var shader = gl.createShader(type == "PS" ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    var success = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+    if (success)
+        return shader
+    console.log(type)
+    console.log(gl.getShaderInfoLog(shader));
+    gl.deleteShader(shader);
+}
+
+
+GLGame2.CreateProgram = function (gl, vshader, pshader, Locs) {
+    var program = gl.createProgram();
+    gl.attachShader(program, vshader);
+    gl.attachShader(program, pshader);
+    gl.linkProgram(program);
+    var success = gl.getProgramParameter(program, gl.LINK_STATUS);
+    if (success) {
+        gl.useProgram(program);
+        if (Locs)
+            Locs.forEach(function (Loc) {
+                gl.enableVertexAttribArray(Loc.Address);
+                gl.vertexAttribPointer(Loc.Address, Loc.Size, Loc.Type, Loc.IsNormalized, Loc.Stride, Loc.Offset);
+            });
+        return program;
+    }
+    console.log(gl.getProgramInfoLog(program));
+
+    gl.deleteProgram(program);
+}
+
+GLGame2.BindVertexProps = function (gl, Loc) {
+    gl.enableVertexAttribArray(Loc.Address);
+    gl.vertexAttribPointer(Loc.Address, Loc.Size, Loc.Type, Loc.IsNormalized, Loc.Stride, Loc.Offset);
+}
+
+GLGame2.CreateVBO = function (gl, Data, IsDynamic, BufferType) {
+    BufferType = BufferType ? BufferType : gl.ARRAY_BUFFER;
+    var buffer = gl.createBuffer();
+    gl.bindBuffer(BufferType, buffer);
+    gl.bufferData(BufferType, BufferType == gl.ARRAY_BUFFER ? new Float32Array(Data) : new Uint32Array(Data), IsDynamic ? gl.DYNAMIC_DRAW : gl.STATIC_DRAW);
+    return buffer;
+}
+GLGame2.CreateVAO = function (gl) {
+    var VAO = gl.createVertexArray();
+    gl.bindVertexArray(VAO);
+    return VAO;
+}
+
+GLGame2.LoadImage = function (Done, imagepath) {
+    var img = new Image();
+    img.onload = function () {
+        Done(this);
+    }
+    img.src = imagepath;
+}
+
+
+GLGame2.GetShaderSources = function (Done, Sources) {
+    Async8.DPQueue(Sources, function (Cfx, ps, i) {
+        var Path = ps[i];
+        $.ajax({
+            url: Path,
+            dataType: "text",
+            success: function (d) {
+                Cfx(d)
+            }
+        })
+    }, Done)
+}
+
+function GLProgram(init) {
+    GLProgram.baseConstructor.call(this, init);
+    this.Prop("gl");
+    this.Prop("VSource");
+    this.Prop("PSource");
+    this.Prop("Locs", []);
+
+}
+
+EventCtrl.ExtendsTo(GLProgram);
+
+GLProgram.prototype.Compile = function (Done) {
+    var me = this;
+
+    GLGame2.GetShaderSources(function (S) {
+        var VShader = GLGame2.CreateShader(me.gl, S[0], "VS");
+        var PShader = GLGame2.CreateShader(me.gl, S[1], "PS");
+        var Program = GLGame2.CreateProgram(me.gl, VShader, PShader, me.Locs);
+        Done(Program);
+    }, [this.VSource, this.PSource]);
+
+}
+
+function GLProgramPack(init) {
+    init.FX = function () {
+        var me = this;
+        GLGame2.GetShaderSources(function (S) {
+            var VShader = GLGame2.CreateShader(me.gl, S[0], "VS");
+            var PShader = GLGame2.CreateShader(me.gl, S[1], "PS");
+            var Program = GLGame2.CreateProgram(me.gl, VShader, PShader, me.Locs);
+            me.Ports.PROGRAM = Program;
+        }, [this.VSource, this.PSource]);
+    }
+    GLProgramPack.baseConstructor.call(this, init);
+    this.Prop("gl");
+    this.Prop("VSource");
+    this.Prop("PSource");
+    this.Prop("Locs", []);
+}
+CPack.ExtendsTo(GLProgramPack);
+
+
+function LoadJSONPack(init) {
+    var me = this;
+    init.FX = function () {
+        Async8.DPQueue(this.JsonPaths, function (Cfx, ps, i) {
+            var Path = ps[i];
+            $.ajax({
+                url: Path,
+                dataType: "json",
+                success: function (d) {
+                    Cfx(d)
+                }
+            })
+        }, function (jsons) {
+            me.Ports.JSONS = jsons;
+        })
+    }
+    LoadJSONPack.baseConstructor.call(this, init);
+    this.Prop("JsonPaths", [])
+}
+
+CPack.ExtendsTo(LoadJSONPack);
+
+function LoadImagePack(init) {
+    init.FX = function () {
+        var me = this;
+        Async8.DPQueue(this.ImagePaths, function (Cfx, ps, i) {
+            var Path = ps[i];
+            var img = new Image();
+            img.addEventListener("load", function () {
+                createImageBitmap(this).then(Cfx);
+            })
+            img.src = Path;
+
+        }, function (images) {
+            me.Ports.IMAGES = images;
+        })
+    }
+    LoadImagePack.baseConstructor.call(this, init);
+    this.Prop("ImagePaths", []);
+}
+
+CPack.ExtendsTo(LoadImagePack);
