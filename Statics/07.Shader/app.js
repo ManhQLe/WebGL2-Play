@@ -1,15 +1,15 @@
 /// <reference path="../JS/GLGame.js" />
 /// <reference path="../JS/gl-matrix-min.js" />
 /// <reference path="../JS/FPCamera.js" />
-var GPUProgram, 
-VertexBuffer, 
-TexBuffer,
-FaceBuffer,
-Faces,
-TexBuffer;
+var GPUProgram,
+    VertexBuffer,
+    TexBuffer,
+    FaceBuffer,
+    Faces,
+    TexBuffer,
+    NormalBuffer;
 
-var Keys={};
-var MatWorld = mat4.create();
+var Keys = {};
 var MatCamera = mat4.create();
 var MatProj = mat4.create();
 var MatCameraPos
@@ -17,23 +17,32 @@ var Cam;
 
 var VBO;
 
-var Locs = [{
-    Address: 0,
-    Size: 3,
-    Type: 0x1406,
-    IsNormalized: false,
-    Stride: 3 * Float32Array.BYTES_PER_ELEMENT,
-    Offset: 0
-},
-{
-    Address: 1,
-    Size: 2,
-    Type: 0x1406,
-    IsNormalized: false,
-    Stride: 2 * Float32Array.BYTES_PER_ELEMENT,
-    Offset: 0
+var Locs = {
+    "VertexProp": {
+        Address: 0,
+        Size: 3,
+        Type: 0x1406,
+        IsNormalized: false,
+        Stride: 3 * Float32Array.BYTES_PER_ELEMENT,
+        Offset: 0
+    },
+    "TexcoordProp": {
+        Address: 1,
+        Size: 2,
+        Type: 0x1406,
+        IsNormalized: false,
+        Stride: 2 * Float32Array.BYTES_PER_ELEMENT,
+        Offset: 0
+    },
+    "NormalProp": {
+        Address: 2,
+        Size: 3,
+        Type: 0x1406,
+        IsNormalized: false,
+        Stride: 3 * Float32Array.BYTES_PER_ELEMENT,
+        Offset: 0
+    }
 }
-]
 
 function Init(Signal) {
     var gl = this.gl;
@@ -66,7 +75,7 @@ function Init(Signal) {
         })
         .on("wheel", function () {
             var e = d3.event;
-            var amount = e.wheelDelta / Math.abs(e.wheelDelta)*5;
+            var amount = e.wheelDelta / Math.abs(e.wheelDelta) * 5;
             Cam.ForthBack(-amount);
         })
         .on("keydown", function () {
@@ -101,56 +110,53 @@ function Init(Signal) {
 function LoadData(Signal) {
 
     var gl = this.gl;
-  
+
     var P1 = new GLProgramPack({
         "VSource": "vertex.hlsl",
         "PSource": "pixel.hlsl",
-        "gl": gl        
+        "gl": gl
     })
 
     var P2 = new LoadImagePack({
-        "ImagePaths": ["Metal.jpg"]
+        "ImagePaths": ["../Images/white.png"]
     })
 
     var P21 = new LoadJSONPack({
-        "JsonPaths":["vase.json"]
+        "JsonPaths": ["vase.json"]
     })
 
     var P3 = new CPack({
-        "Ins": ["IMAGES", "PROGRAM","JSONS"],
+        "Ins": ["IMAGES", "PROGRAM", "JSONS"],
         "FX": function () {
             var Ports = this.Ports;
-            var image = Ports.IMAGES[0];                        
-            var Model = Ports.JSONS[0];            
+            var image = Ports.IMAGES[0];
+            var Model = Ports.JSONS[0];
             GPUProgram = Ports.PROGRAM;
 
 
             var Mesh = Model.meshes[0];
 
-            Faces =  [].concat.apply([],Mesh.faces)
+            Faces = [].concat.apply([], Mesh.faces)
             //Creating Buffer
-            VertexBuffer = GLGame2.CreateVBO(gl, Mesh.vertices);                        
-            GLGame2.BindVertexProps(gl,Locs[0]);
+            VertexBuffer = GLGame2.CreateVBO(gl, Mesh.vertices);
+            GLGame2.BindVertexProps(gl, Locs["VertexProp"]);
 
-            TexBuffer = GLGame2.CreateVBO(gl,Mesh.texturecoords[0])
-            GLGame2.BindVertexProps(gl,Locs[1]);
+            TexBuffer = GLGame2.CreateVBO(gl, Mesh.texturecoords[0])
+            GLGame2.BindVertexProps(gl, Locs["TexcoordProp"]);
 
+            NormalBuffer = GLGame2.CreateVBO(gl, Mesh.normals);
+            GLGame2.BindVertexProps(gl, Locs["NormalProp"])
 
-            FaceBuffer = GLGame2.CreateVBO(gl,Faces, false, gl.ELEMENT_ARRAY_BUFFER);
+            FaceBuffer = GLGame2.CreateVBO(gl, Faces, false, gl.ELEMENT_ARRAY_BUFFER);
 
-
-            
-            var MatWorldPos = gl.getUniformLocation(GPUProgram, 'MatWorld');
             MatCameraPos = gl.getUniformLocation(GPUProgram, 'MatCamera');
             var MatProjPos = gl.getUniformLocation(GPUProgram, 'MatProj');
-
-            gl.uniformMatrix4fv(MatWorldPos, gl.FALSE, MatWorld);
 
             gl.uniformMatrix4fv(MatProjPos, gl.FALSE, MatProj);
 
             TexBuffer = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, TexBuffer);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -162,10 +168,10 @@ function LoadData(Signal) {
         }
     })
 
-    var W = Cir8.MultiLink(P1, "X", P2, "X",P21,"X");    
-    var W1 = Cir8.Link(P1, "PROGRAM", "PROGRAM", P3);    
-    var W2 = Cir8.Link(P2, "IMAGES", "IMAGES", P3);    
-    var W3 = Cir8.Link(P21,"JSONS","JSONS",P3);
+    var W = Cir8.MultiLink(P1, "X", P2, "X", P21, "X");
+    var W1 = Cir8.Link(P1, "PROGRAM", "PROGRAM", P3);
+    var W2 = Cir8.Link(P2, "IMAGES", "IMAGES", P3);
+    var W3 = Cir8.Link(P21, "JSONS", "JSONS", P3);
 
     W.Signal = "Start";
 }
