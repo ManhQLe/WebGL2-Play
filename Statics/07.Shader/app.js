@@ -11,8 +11,13 @@ var GPUProgram,
 
 var Keys = {};
 var MatCamera = mat4.create();
+var MatNormal = mat4.creatre();
 var MatProj = mat4.create();
-var MatCameraPos
+var LightPos = vec3.create();
+var Ld = vec3.create();
+var Kd = vec3.create();
+
+var MatCameraPos,MatNormalPos;
 var Cam;
 
 var VBO;
@@ -151,6 +156,7 @@ function LoadData(Signal) {
 
             MatCameraPos = gl.getUniformLocation(GPUProgram, 'MatCamera');
             var MatProjPos = gl.getUniformLocation(GPUProgram, 'MatProj');
+            MatNormalPos = gl.getUniformLocation(GPUProgram,"MatrixNormal");
 
             gl.uniformMatrix4fv(MatProjPos, gl.FALSE, MatProj);
 
@@ -198,7 +204,13 @@ function Render() {
     }
 
     Cam.GetMatrix(MatCamera)
+    
+    mat4.transpose(MatNormal,MatCamera);
+    mat4.inverse(MatNormal,MatNormal);
+
     gl.uniformMatrix4fv(MatCameraPos, gl.FALSE, MatCamera);
+    gl.uniformMatrix4fv(MatNormalPos,gl.FALSE,MatNormal)
+
     gl.bindTexture(gl.TEXTURE_2D, TexBuffer);
     gl.activeTexture(gl.TEXTURE0);
     gl.drawElements(gl.TRIANGLES, Faces.length, gl.UNSIGNED_INT, 0);

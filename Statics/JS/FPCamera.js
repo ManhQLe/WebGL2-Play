@@ -40,6 +40,7 @@ function Camera(Init) {
     this.Up = [0,1,0];
     this.Dir = [0,0,1];
     this.Right = [1,0,0];
+    this._._movemat = new Float32Array(16);
 }
 
 EventCtrl.ExtendsTo(Camera);
@@ -96,7 +97,7 @@ Camera.prototype.GetMatrix = function (m) {
     var Right = this.Right;
     var pos = [-this.Pos[0],-this.Pos[1],-this.Pos[2]];
     mat4.fromTranslation(m,pos)    
-    var x = new Float32Array(16);
+    var x = this._._movemat;
     mat4.set(
         x,
         Right[0], Up[0], Dir[0], 0,

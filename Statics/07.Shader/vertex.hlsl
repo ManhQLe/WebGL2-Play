@@ -7,6 +7,9 @@ uniform mat4 MatCamera;
 uniform mat4 MatProj;
 uniform mat4 NormalMatrix;
 
+uniform vec3 LightPosition;
+uniform vec3 Kd;
+uniform vec3 Ld;
 
 out vec4 vcolor;
 out vec2 vtexcoord;
@@ -14,7 +17,12 @@ out vec2 vtexcoord;
 
 void main(){
     vtexcoord = texcoord;
-    vnormal = vec3(NormalMatrix * vec4(normal,1.0));
-    gl_Position = MatProj * MatCamera * vec4(pos,1.0);
-    vcolor = vec4(1,1,1,1.0);
+    vec4 enormal = vec3(NormalMatrix * vec4(normal,1.0));
+    vec4 eyeCoords = MatCamera * vec4(pos,1.0)
+    vec3 lightDir = normalize(LightPosition - vec3(eyeCoords));
+
+    vcolor = Ld*Kd*max(dot(lightDir,vec3(enormal)),0.0)
+
+    gl_Position = MatProj * eyeCoords;
+    
 }
