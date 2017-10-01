@@ -17,12 +17,12 @@ out vec2 vtexcoord;
 
 void main(){
     vtexcoord = texcoord;
-    vec4 enormal = vec3(NormalMatrix * vec4(normal,1.0));
-    vec4 eyeCoords = MatCamera * vec4(pos,1.0)
-    vec3 lightDir = normalize(LightPosition - vec3(eyeCoords));
+  
+    vec3 lightDir = normalize(LightPosition - vec3(pos));
 
-    vcolor = Ld*Kd*max(dot(lightDir,vec3(enormal)),0.0)
+    vcolor =vec4(Ld*Kd*max(dot(lightDir,normal),0.0),1.0);
 
-    gl_Position = MatProj * eyeCoords;
+    //vcolor=vec4(.5,.5,.5,1);
+    gl_Position = MatProj * MatCamera * vec4(pos,1.0);
     
 }

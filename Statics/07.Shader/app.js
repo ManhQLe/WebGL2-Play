@@ -11,13 +11,16 @@ var GPUProgram,
 
 var Keys = {};
 var MatCamera = mat4.create();
-var MatNormal = mat4.creatre();
+var MatNormal = mat4.create();
 var MatProj = mat4.create();
 var LightPos = vec3.create();
 var Ld = vec3.create();
 var Kd = vec3.create();
 
-var MatCameraPos,MatNormalPos;
+var MatCameraPos,MatNormalPos,
+LdPos,LightPosPos,KdPos;
+
+;
 var Cam;
 
 var VBO;
@@ -64,6 +67,12 @@ function Init(Signal) {
         Yaw: 0
     });
 
+    LightPos[0]= 60;
+    LightPos[1]= 60;
+    LightPos[2]= 60;
+
+    Ld[0] = Ld[1] = Ld[2] = 1;
+    Kd[0] = Kd[1] = Kd[2] = .8;
 
     var m1;
 
@@ -123,7 +132,7 @@ function LoadData(Signal) {
     })
 
     var P2 = new LoadImagePack({
-        "ImagePaths": ["../Images/white.png"]
+        "ImagePaths": ["../Images/metal.jpg"]
     })
 
     var P21 = new LoadJSONPack({
@@ -157,6 +166,11 @@ function LoadData(Signal) {
             MatCameraPos = gl.getUniformLocation(GPUProgram, 'MatCamera');
             var MatProjPos = gl.getUniformLocation(GPUProgram, 'MatProj');
             MatNormalPos = gl.getUniformLocation(GPUProgram,"MatrixNormal");
+
+            LightPosPos = gl.getUniformLocation(GPUProgram,"LightPosition");
+            KdPos = gl.getUniformLocation(GPUProgram,"Kd")
+            LdPos = gl.getUniformLocation(GPUProgram,"Ld")
+
 
             gl.uniformMatrix4fv(MatProjPos, gl.FALSE, MatProj);
 
@@ -206,7 +220,13 @@ function Render() {
     Cam.GetMatrix(MatCamera)
     
     mat4.transpose(MatNormal,MatCamera);
-    mat4.inverse(MatNormal,MatNormal);
+    mat4.invert(MatNormal,MatNormal);
+//console.log(MatNormal)
+    gl.uniform3fv(KdPos,Kd);
+    gl.uniform3fv(LdPos,Ld);
+    gl.uniform3fv(LightPosPos,LightPos);
+
+    gl.uniformMatrix4fv(MatNormalPos,gl.FALSE,MatNormal);
 
     gl.uniformMatrix4fv(MatCameraPos, gl.FALSE, MatCamera);
     gl.uniformMatrix4fv(MatNormalPos,gl.FALSE,MatNormal)
