@@ -42,7 +42,7 @@ void main(){
     if(sDotN > 0.0)
         Is = Light.Ls * Material.Ks * pow(max(dot(v,r),0.0),Material.Shininess);
     
-    vcolor = vec4(Ia + Id + Is,1.0);
+    vcolor = vec4(Ia + Id + Is,1.0);d
 
     gl_Position = MatProj * MatCamera * vec4(pos,1.0);
     
