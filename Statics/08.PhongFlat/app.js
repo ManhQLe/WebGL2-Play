@@ -143,7 +143,7 @@ function LoadData(Signal) {
     var gl = this.gl;
 
     var P1 = new GLProgramPack({
-        "VSource": "vertex2.hlsl",
+        "VSource": "vertex.hlsl",
         "PSource": "pixel.hlsl",
         "gl": gl
     })
@@ -217,9 +217,17 @@ function LoadData(Signal) {
 
     W.Signal = "Start";
 }
+var ROT  = 2;
+function Update(){
+    var a = ROT*Math.PI/180;
+
+    vec3.rotateZ(LightInfo.Pos,LightInfo.Pos,[0,0,0],a);
+
+}
 
 function Render() {
     var gl = this.gl;
+   // Update();
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     gl.useProgram(GPUProgram);
 

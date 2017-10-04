@@ -28,21 +28,26 @@ uniform mat4 MatProj;
 out vec4 vcolor;
 out vec2 vtexcoord;
 
-
-void main(){
-    vtexcoord = texcoord;    
-    vec3 s = normalize(Light.Pos - vec3(pos));
-    vec3 v = normalize(EyePos - vec3(pos));
-    vec3 r = normalize(reflect(-s,normal));
+vec4 PhongModel(vec3 Position,vec3 Norm){
+    vec3 s = normalize(Light.Pos - Position);
+    vec3 v = normalize(EyePos - Position);
+    vec3 r = normalize(reflect(-s,Norm));
 
     vec3 Ia = Light.La * Material.Ka;
-    float sDotN = max(dot(s,normal),0.0);
+    float sDotN = max(dot(s,Norm),0.0);
     vec3 Id = Light.Ld * Material.Kd * sDotN;
     vec3 Is = vec3(0.0);
     if(sDotN > 0.0)
         Is = Light.Ls * Material.Ks * pow(max(dot(v,r),0.0),Material.Shininess);
     
-    vcolor = vec4(Ia + Id + Is,1.0);
+    return vec4(Ia + Id + Is,1.0);
+}
+
+
+void main(){
+    vtexcoord = texcoord;    
+   
+    vcolor = PhongModel(pos,normal);
 
     gl_Position = MatProj * MatCamera * vec4(pos,1.0);
     
