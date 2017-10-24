@@ -34,14 +34,14 @@ vec4 PhongModel(int LightIdx,vec3 Position,vec3 Norm){
         s = normalize(vec3(Lights[LightIdx].Pos));
     vec3 v = normalize(EyePos - Position);
     vec3 n = normalize(Norm);
-    vec3 r =normalize(reflect(-s,n));
+    vec3 h = normalize(v + s);
 
     vec4 I = Lights[LightIdx].Li;
 
     return 
         I * vec4(
             Material.Ka + Material.Kd*max(dot(s,n),0.0) +
-            Material.Ks * pow( max(dot(r,v),0.0), Material.Shininess)
+            Material.Ks * pow( max(dot(h,n),0.0), Material.Shininess)
         ,1.0);
 }
 
