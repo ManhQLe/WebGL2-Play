@@ -21,7 +21,7 @@ var MatCameraAttr, LightAttrs, MaterialAttr, EyeAttr, NofLightAttr;
 var Cam;
 var VBO;
 
-var LightInfo, MaterialInfo, NumberOfLights=2;
+var LightInfo, MaterialInfo, NumberOfLights=1;
 
 var Locs = {
     "VertexProp": {
@@ -76,19 +76,18 @@ function Init(Signal) {
 
     LightInfo = [{
             "Pos": new Float32Array([60, 60, 60,0]),
-            "Li": new Float32Array([1,1, 1,1]) //white
-        },
-        {
-            "Pos": new Float32Array([60, -60, 60,1]),
-            "Li": new Float32Array([0, 0, 0,1]) //Blue
-        }
+            "Li": new Float32Array([1,1, 1,1]),
+            "Dir":new Float32Array([-60,-60,-60]),
+            "Exp":20.6,
+            "Cutoff":30
+        }       
     ]
 
     MaterialInfo = {
         "Ka": new Float32Array([0.2125, 0.1275, 0.054]), // Ambient
         "Kd": new Float32Array([0.714, 0.4284, 0.18144]), //Diffuse
         "Ks": new Float32Array([0.393548, 0.271906, 0.166721]), //Specular
-        "Shininess": 100.6
+        "Shininess": 25.6
     }
 
     var m1;
@@ -187,6 +186,9 @@ function LoadData(Signal) {
                 var LightAttr = {};                
                 LightAttr["Pos"] = gl.getUniformLocation(GPUProgram, 'Lights['+i+'].Pos');
                 LightAttr["Li"] = gl.getUniformLocation(GPUProgram, 'Lights['+i+'].Li');
+                LightAttr["Dir"] = gl.getUniformLocation(GPUProgram, 'Lights['+i+'].Dir');
+                LightAttr["Exp"] = gl.getUniformLocation(GPUProgram, 'Lights['+i+'].Exp');
+                LightAttr["Cutoff"] = gl.getUniformLocation(GPUProgram, 'Lights['+i+'].Cutoff');
                 LightAttrs.push(LightAttr);
             }
 
@@ -256,9 +258,11 @@ function Render() {
 
     for(var i = 0;i<NumberOfLights;i++){
         var Light = LightInfo[i];
-        for(var x in Light){
-            gl.uniform4fv(LightAttrs[i][x],Light[x]);
-        }
+        gl.uniform4fv(LightAttrs[i]["Pos"],Light["Pos"]);
+        gl.uniform4fv(LightAttrs[i]["Li"],Light["Li"]);
+        gl.uniform3fv(LightAttrs[i]["Dir"],Light["Dir"]);
+        gl.uniform1f(LightAttrs[i]["Exp"],Light["Exp"]);
+        gl.uniform1f(LightAttrs[i]["Cutoff"],Light["Cutoff"]);
     }
 
     gl.uniform3fv(MaterialAttr.Ka, MaterialInfo.Ka);
