@@ -6,8 +6,11 @@ var GPUProgram,
     TexBuffer,
     FaceBuffer,
     Faces,
+    LeAwesomeTexBuffer,
     NormalBuffer;
 
+
+var texLocs;    
 var Keys = {};
 var MatCamera = mat4.create();
 var MatNormal = mat4.create();
@@ -148,7 +151,7 @@ function LoadData(Signal) {
     })
 
     var P2 = new LoadImagePack({
-        "ImagePaths": ["../Images/Brick.jpg"]
+        "ImagePaths": ["/Images/Brick2.png","/Images/LeIsAwesome.png"]
     })
 
     var P21 = new LoadJSONPack({
@@ -160,6 +163,7 @@ function LoadData(Signal) {
         "FX": function () {
             var Ports = this.Ports;
             var image = Ports.IMAGES[0];
+            var leImage = Ports.IMAGES[1];
             var Model = Ports.JSONS[0];
             GPUProgram = Ports.PROGRAM;
 
@@ -201,14 +205,31 @@ function LoadData(Signal) {
 
             TexBuffer = gl.createTexture();
             gl.bindTexture(gl.TEXTURE_2D, TexBuffer);
-            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, image.width, image.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.activeTexture(gl.TEXTURE0);
 
+
+            LeAwesomeTexBuffer = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, LeAwesomeTexBuffer);
+            gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, leImage.width, leImage.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, leImage);
+
+
+            texLocs = [ gl.getUniformLocation(GPUProgram,"tex"),
+                    gl.getUniformLocation(GPUProgram,"leTex")]
+            
+            texLocs.forEach(function(texLoc,idx){
+                gl.uniform1i(texLoc,idx);
+            })
+    
             Signal.DONE = 1;
         }
     })
@@ -272,11 +293,14 @@ function Render() {
 
     gl.uniformMatrix4fv(MatCameraAttr, gl.FALSE, MatCamera);
 
-    gl.bindTexture(gl.TEXTURE_2D, TexBuffer);
     gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, TexBuffer);
+    
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, LeAwesomeTexBuffer);
+    
     gl.drawElements(gl.TRIANGLES, Faces.length, gl.UNSIGNED_INT, 0);
 }
-
 
 var MyGame = new GLGame2({
     Width: 800,
