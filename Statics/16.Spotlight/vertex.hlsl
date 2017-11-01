@@ -15,7 +15,7 @@ out vec3 fpos;
 void main(){
     vtexcoord = texcoord;  
     fnorm = normal;   
-
+    fpos = pos;
     gl_Position = MatProj * MatCamera * vec4(pos,1.0);
     
 }
